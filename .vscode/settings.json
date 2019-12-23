@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "vector": "cpp",
+        "stack": "cpp",
+        "unordered_set": "cpp",
+        "iterator": "cpp",
+        "memory": "cpp",
+        "iosfwd": "cpp",
+        "utility": "cpp",
+        "unordered_map": "cpp",
+        "iostream": "cpp"
+    },
+    "cSpell.words": [
+        "stoi"
+    ]
+}
