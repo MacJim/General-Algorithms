@@ -39,20 +39,20 @@ int searchForANumber(const std::vector<int>& nums, const int target) {
     }
 
     int left = 0;
-    int right = nums.size() - 1;
+    int right = nums.size() - 1;    // The initial value of right is within range.
 
     while (left <= right) {    // Terminates when left == (right + 1)
         const auto mid = left + (right - left) / 2;
         if (nums[mid] == target) {
             return mid;
         } else if (nums[mid] > target) {
-            right = mid - 1;
+            right = mid - 1;    // Minus 1 to prevent testing the same incorrect number.
         } else {
-            left = mid + 1;
+            left = mid + 1;    // Plus 1 to prevent testing the same incorrect number.
         }
     }
 
-    // We know that there's no answer when left == (right + 1).
+    // There's no answer when left == (right + 1).
     return -1;
 }
 
@@ -71,6 +71,8 @@ void testSearchForANumber() {
     test(searchForANumber, {0,2,4}, 3, -1);
     test(searchForANumber, {0,2,4}, 4, 2);
 
+    test(searchForANumber, {0,2,4,6,8,10,12}, 3, -1);
+
     for (const auto i: {0,1,2,3,4}) {
         test(searchForANumber, {0,1,2,3,4}, i, i);
     }
@@ -86,8 +88,74 @@ void testSearchForANumber() {
 }
 
 
+#pragma mark - Search for lower bound
+int searchForLowerBound(const std::vector<int>& nums, const int target) {
+    if (nums.empty()) {
+        return -1;
+    }
+
+    int left = 0;
+    int right = nums.size();    // The initial value of right is out of bound.
+
+    while (left < right) {    // Terminates when left == right
+        int mid = left + (right - left) / 2;
+
+        if (nums[mid] >= target) {
+            // If it is larger or equals, `mid` will serve as an upper bound (in order to find the lower bound).
+            right = mid;
+        } else {
+            /*
+             * Note "plus 1" here: add it so that we can return the correct `left` that's equal to or bigger than `target`.
+             */
+            left = mid + 1;
+        }
+    }
+
+    if ((left == 0) && (nums[0] != target)) {
+        return -1;
+    } else {
+        return left;
+    }
+}
+
+
+void testSearchForLowerBound() {
+    std::cout << "Search for lower bound\n";
+
+    test(searchForLowerBound, {0,1,2,3,4}, 5, 5);
+
+    test(searchForLowerBound, {0}, 1, 1);
+
+    for (const auto i: {0,2,4,6}) {
+        test(searchForLowerBound, {0,0,2,2,4,4,6,6}, i, i);
+    }
+    for (const auto i: {1,3,5,7}) {
+        test(searchForLowerBound, {0,0,2,2,4,4,6,6}, i, i + 1);
+    }
+    for (const auto i: {0,1,2,3,4}) {
+        test(searchForLowerBound, {0,1,2,3,4}, i, i);
+    }
+    for (const auto i: {-3,-2,-1}) {
+        test(searchForLowerBound, {0,1,2,3,4}, i, -1);
+    }
+    for (const auto i: {5,6,7}) {
+        test(searchForLowerBound, {0,1,2,3,4}, i, 5);
+    }
+    for (const auto i: {0,1,2,3,4,5}) {
+        test(searchForLowerBound, {0,1,2,3,4,5}, i, i);
+    }
+    for (const auto i: {-3,-2,-1}) {
+        test(searchForLowerBound, {0,1,2,3,4,5}, i, -1);
+    }
+    for (const auto i: {6,7,8}) {
+        test(searchForLowerBound, {0,1,2,3,4,5}, i, 6);
+    }
+}
+
+
 int main() {
-    testSearchForANumber();
+//    testSearchForANumber();
+    testSearchForLowerBound();
 
     return 0;
 }
