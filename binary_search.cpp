@@ -88,14 +88,21 @@ void testSearchForANumber() {
 }
 
 
-#pragma mark - Search for lower bound
-int searchForLowerBound(const std::vector<int>& nums, const int target) {
+#pragma mark - Search for leftmost element
+/**
+ * Search for the first (leftmost) occurrence of `target`.
+ *
+ * @param nums
+ * @param target
+ * @return `target`'s leftmost index in `nums` if it exists in `nums`; -1 otherwise.
+ */
+int searchForLeftmostElement(const std::vector<int>& nums, const int target) {
     if (nums.empty()) {
         return -1;
     }
 
     int left = 0;
-    int right = nums.size();    // The initial value of right is out of bound.
+    int right = nums.size();    // The initial value of right is out of bound. This is because `left` can be out of bound at termination.
 
     while (left < right) {    // Terminates when left == right
         int mid = left + (right - left) / 2;
@@ -111,51 +118,159 @@ int searchForLowerBound(const std::vector<int>& nums, const int target) {
         }
     }
 
-    if ((left == 0) && (nums[0] != target)) {
+    if (left == nums.size()) {
+        // Out of bound: `target` is too large.
         return -1;
-    } else {
-        return left;
+    }
+    if (nums[left] != target) {
+        // `target` doesn't exist in `nums`.
+        return -1;
+    }
+    return left;
+
+    // The following code returns the index where `target` should be, even if it doesn't exist.
+//    if ((left == 0) && (nums[0] != target)) {
+//        return -1;
+//    } else {
+//        return left;
+//    }
+}
+
+
+void testSearchForLeftmostElement() {
+    std::cout << "Search for leftmost element\n";
+
+    test(searchForLeftmostElement, {0, 1, 2, 3, 4}, 5, -1);
+//    test(searchForLeftmostElement, {0, 1, 2, 3, 4}, 5, 5);
+
+    test(searchForLeftmostElement, {0}, 1, -1);
+//    test(searchForLeftmostElement, {0}, 1, 1);
+
+    for (const auto i: {0,2,4,6}) {
+        test(searchForLeftmostElement, {0, 0, 2, 2, 4, 4, 6, 6}, i, i);
+    }
+    for (const auto i: {1,3,5,7}) {
+        test(searchForLeftmostElement, {0, 0, 2, 2, 4, 4, 6, 6}, i, -1);
+//        test(searchForLeftmostElement, {0, 0, 2, 2, 4, 4, 6, 6}, i, i + 1);
+    }
+    for (const auto i: {0,2,4,6,8}) {
+        test(searchForLeftmostElement, {0, 0, 2, 2, 4, 4, 6, 6, 8, 8}, i, i);
+    }
+    for (const auto i: {1,3,5,7,9}) {
+        test(searchForLeftmostElement, {0, 0, 2, 2, 4, 4, 6, 6, 8, 8}, i, -1);
+//        test(searchForLeftmostElement, {0, 0, 2, 2, 4, 4, 6, 6}, i, i + 1);
+    }
+    for (const auto i: {0,1,2,3,4}) {
+        test(searchForLeftmostElement, {0, 1, 2, 3, 4}, i, i);
+    }
+    for (const auto i: {-3,-2,-1}) {
+        test(searchForLeftmostElement, {0, 1, 2, 3, 4}, i, -1);
+    }
+    for (const auto i: {5,6,7}) {
+        test(searchForLeftmostElement, {0, 1, 2, 3, 4}, i, -1);
+//        test(searchForLeftmostElement, {0, 1, 2, 3, 4}, i, 5);
+    }
+    for (const auto i: {0,1,2,3,4,5}) {
+        test(searchForLeftmostElement, {0, 1, 2, 3, 4, 5}, i, i);
+    }
+    for (const auto i: {-3,-2,-1}) {
+        test(searchForLeftmostElement, {0, 1, 2, 3, 4, 5}, i, -1);
+    }
+    for (const auto i: {6,7,8}) {
+        test(searchForLeftmostElement, {0, 1, 2, 3, 4, 5}, i, -1);
     }
 }
 
 
-void testSearchForLowerBound() {
-    std::cout << "Search for lower bound\n";
+#pragma mark - Search for rightmost element
+/**
+ * Search for the last (rightmost) occurrence of `target`.
+ *
+ * @param nums
+ * @param target
+ * @return `target`'s rightmost index in `nums` if it exists in `nums`; -1 otherwise.
+ */
+int searchForRightmostElement(const std::vector<int>& nums, const int target) {
+    if (nums.empty()) {
+        return -1;
+    }
 
-    test(searchForLowerBound, {0,1,2,3,4}, 5, 5);
+    int left = 0;
+    int right = nums.size();    // The initial value of right is out of bound. This is because `left` can be out of bound at termination.
 
-    test(searchForLowerBound, {0}, 1, 1);
+    while (left < right) {    // Terminates when left == right
+        int mid = left + (right - left) / 2;
+
+        if (nums[mid] <= target) {
+            // Here we intentionally let `left` get past the upper bound.
+            left = mid + 1;
+        } else {
+            right = mid;
+        }
+    }
+
+    // Here, `left == right` so we can also return `right`.
+    // Minus 1 to get the upper bound back.
+    left -= 1;
+
+    if (left == -1) {
+        // Out of bound. `target` is too small.
+        return -1;
+    }
+    if (nums[left] != target) {
+        // `target` doesn't exist in `nums`.
+        return -1;
+    }
+    return left;
+
+//    if ((left <= 1) && (nums[left] != target)) {
+//        return -1;
+//    } else {
+//        return (left - 1);
+//    }
+}
+
+
+void testSearchForRightmostElement() {
+    std::cout << "Search for rightmost element\n";
 
     for (const auto i: {0,2,4,6}) {
-        test(searchForLowerBound, {0,0,2,2,4,4,6,6}, i, i);
+        test(searchForRightmostElement, {0, 0, 2, 2, 4, 4, 6, 6}, i, i + 1);
     }
     for (const auto i: {1,3,5,7}) {
-        test(searchForLowerBound, {0,0,2,2,4,4,6,6}, i, i + 1);
+        test(searchForRightmostElement, {0, 0, 2, 2, 4, 4, 6, 6}, i, -1);
+    }
+    for (const auto i: {0,2,4,6,8}) {
+        test(searchForRightmostElement, {0, 0, 2, 2, 4, 4, 6, 6, 8, 8}, i, i + 1);
+    }
+    for (const auto i: {1,3,5,7,9}) {
+        test(searchForRightmostElement, {0, 0, 2, 2, 4, 4, 6, 6, 8, 8}, i, -1);
     }
     for (const auto i: {0,1,2,3,4}) {
-        test(searchForLowerBound, {0,1,2,3,4}, i, i);
+        test(searchForRightmostElement, {0, 1, 2, 3, 4}, i, i);
     }
     for (const auto i: {-3,-2,-1}) {
-        test(searchForLowerBound, {0,1,2,3,4}, i, -1);
+        test(searchForRightmostElement, {0, 1, 2, 3, 4}, i, -1);
     }
     for (const auto i: {5,6,7}) {
-        test(searchForLowerBound, {0,1,2,3,4}, i, 5);
+        test(searchForRightmostElement, {0, 1, 2, 3, 4}, i, -1);
     }
     for (const auto i: {0,1,2,3,4,5}) {
-        test(searchForLowerBound, {0,1,2,3,4,5}, i, i);
+        test(searchForRightmostElement, {0, 1, 2, 3, 4, 5}, i, i);
     }
     for (const auto i: {-3,-2,-1}) {
-        test(searchForLowerBound, {0,1,2,3,4,5}, i, -1);
+        test(searchForRightmostElement, {0, 1, 2, 3, 4, 5}, i, -1);
     }
     for (const auto i: {6,7,8}) {
-        test(searchForLowerBound, {0,1,2,3,4,5}, i, 6);
+        test(searchForRightmostElement, {0, 1, 2, 3, 4, 5}, i, -1);
     }
 }
 
 
 int main() {
 //    testSearchForANumber();
-    testSearchForLowerBound();
+    testSearchForLeftmostElement();
+    testSearchForRightmostElement();
 
     return 0;
 }
