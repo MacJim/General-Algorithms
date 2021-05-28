@@ -8,12 +8,18 @@
 
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <random>
+#include <algorithm>
+
+#include "helpers/terminal_format.h"
 
 
-class Hasher {
+#pragma mark - 1. No hash overflow protection
+class HasherV1 {
 private:
-    static const int MOD = 101;
-    static const int BASE = 256;
+    static const int MOD = 13;
+    static const int BASE = 10;
 
 private:
     int length;
@@ -23,7 +29,7 @@ private:
     int currentHash;
 
 public:
-    Hasher(int maxLength): length(0), maxLength(maxLength), currentHash(0) {}
+    HasherV1(int maxLength): length(0), maxLength(maxLength), currentHash(0) {}
 
 public:
     [[nodiscard]] int getHash() const {
@@ -36,9 +42,8 @@ public:
         }
 
         currentHash *= BASE;
-        currentHash %= MOD;
-
         currentHash += static_cast<int>(nextCharacter);
+        currentHash %= MOD;
 
         length += 1;
     }
@@ -52,23 +57,26 @@ public:
         previousHashDelta %= MOD;
         currentHash -= previousHashDelta;
 
-        currentHash *= BASE;
-        currentHash %= MOD;
+        if (currentHash < 0) {
+            currentHash += MOD;
+        }
 
+        currentHash *= BASE;
         currentHash += static_cast<int>(nextCharacter);
+        currentHash %= MOD;
     }
 };
 
 
 int findWithRollingHash(const std::string& haystack, const std::string& needle) {
-    auto needleHasher = Hasher(needle.size());
+    auto needleHasher = HasherV1(needle.size());
     for (const auto& c: needle) {
         needleHasher.updateCharacter(c);
     }
     const auto needleHash = needleHasher.getHash();
 
     // First few characters.
-    auto haystackHasher = Hasher(needle.size());
+    auto haystackHasher = HasherV1(needle.size());
     for (size_t left = 0; left < needle.size(); left += 1) {
         haystackHasher.updateCharacter(haystack[left]);
     }
@@ -116,32 +124,91 @@ void test(const std::string& haystack, const std::string& needle, const int expe
     auto result = findWithRollingHash(haystack, needle);
 
     if (result == expectedResult) {
-        std::cout << "[Correct] " << haystack << ", " << needle << ": " << result << std::endl;
+        std::cout << terminal_format::OK_GREEN << "[Correct] " << terminal_format::ENDC << haystack << ", " << needle << ": " << result << std::endl;
     } else {
-        std::cout << "[Wrong] " << haystack << ", " << needle << ": " << result << " (should be " << expectedResult << ")" << std::endl;
+        std::cout << terminal_format::FAIL << terminal_format::BOLD << "[Wrong] " << terminal_format::ENDC << haystack << ", " << needle << ": " << result << " (should be " << expectedResult << ")" << std::endl;
+    }
+}
+
+
+std::string generateRandomString(const int length) {
+    std::string chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+    auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    auto generator = std::default_random_engine(seed);
+    auto distribution = std::uniform_int_distribution<>(0, chars.size() - 1);
+
+    auto returnValue = std::string(length, 0);
+    std::generate_n(returnValue.begin(), length, [&chars, &generator, &distribution]() {
+        const auto index = distribution(generator);
+        return chars[index];
+    });
+//    std::cout << returnValue << std::endl;
+
+    return returnValue;
+}
+
+
+void testHashValue(const int needleLength, const int prefixLength) {
+    auto needle = generateRandomString(needleLength);
+    auto strWithPrefix = generateRandomString(prefixLength) + needle;
+
+    auto needleHasher = HasherV1(needleLength);
+    for (const char& c: needle) {
+        needleHasher.updateCharacter(c);
+    }
+
+    auto strHasher = HasherV1(needleLength);
+    for (size_t i = 0; i < needleLength; i += 1) {
+        strHasher.updateCharacter(strWithPrefix[i]);
+    }
+    for (size_t i = needleLength; i < strWithPrefix.size(); i += 1) {
+        strHasher.updateCharacter(strWithPrefix[i - needleLength], strWithPrefix[i]);
+    }
+
+    if (needleHasher.getHash() == strHasher.getHash()) {
+        std::cout << terminal_format::OK_GREEN << "[Correct] " << terminal_format::ENDC << needle << ", " << strWithPrefix << ": " << needleHasher.getHash() << std::endl;
+    } else {
+        std::cout << terminal_format::FAIL << terminal_format::BOLD << "[Wrong] " << terminal_format::ENDC << needle << ", " << strWithPrefix << ": " << strHasher.getHash() << " (should be " << needleHasher.getHash() << ")" << std::endl;
     }
 }
 
 
 int main() {
+    // Overflow test cases.
+    test("aaaaaacccccuuuuu", "aaaaaccccc", 1);
+    test("AAAAAACCCCCUUUUU", "AAAAACCCCC", 1);
+    test("AAAAAAAAAACCCCCUUUUU", "AAAAACCCCC", 5);
+
+    test("aacc", "acc", 1);
+    test("cbR536vk8", "cbR", 0);
+    test("536vk8cbR", "cbR", 6);
     test("abracadabra", "abra", 0);
     test("abracadabra", "cad", 4);
     test("abracadabra", "dab", 6);
     test("abracadabra", "cda", -1);
 
-//    auto hasher1 = Hasher(3);
+    for (int i = 0; i < 40; i += 1) {
+        testHashValue(3, 1);
+    }
+
+//    generateRandomString(6);
+
+//    auto hasher1 = HasherV1(3);
 //    hasher1.updateCharacter('c');
 //    hasher1.updateCharacter('a');
-//    std::cout << hasher1.updateCharacter('d') << std::endl;
+//    hasher1.updateCharacter('d');
+//    std::cout << hasher1.getHash() << std::endl;
 //
-//    auto hasher2 = Hasher(3);
+//    auto hasher2 = HasherV1(3);
 //    hasher2.updateCharacter('a');
 //    hasher2.updateCharacter('b');
 //    hasher2.updateCharacter('r');
 //    hasher2.updateCharacter('a', 'a');
 //    hasher2.updateCharacter('b', 'c');
 //    hasher2.updateCharacter('r', 'a');
-//    std::cout << hasher2.updateCharacter('a', 'd') << std::endl;
+//    hasher2.updateCharacter('a', 'd');
+//    std::cout << hasher2.getHash() << std::endl;
 
     return 0;
 }
