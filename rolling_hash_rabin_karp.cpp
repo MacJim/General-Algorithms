@@ -68,15 +68,72 @@ public:
 };
 
 
+#pragma mark - 2. With hash overflow protection
+class HasherV2 {
+private:
+    static const int MOD = 13;
+    static const int BASE = 10;
+
+private:
+    int length;
+    int maxLength;
+
+private:
+    int currentHash;
+
+public:
+    HasherV2(int maxLength): length(0), maxLength(maxLength), currentHash(0) {}
+
+public:
+    [[nodiscard]] int getHash() const {
+        return currentHash;
+    }
+
+    void updateCharacter(char nextCharacter) {
+        if (length == maxLength) {
+            throw std::runtime_error("Enough initial characters. Call `int updateCharacter(char, char)` instead.");
+        }
+
+        currentHash *= BASE;
+        currentHash += static_cast<int>(nextCharacter);
+        currentHash %= MOD;
+
+        length += 1;
+    }
+
+    void updateCharacter(char previousCharacter, char nextCharacter) {
+        if (length != maxLength) {
+            throw std::runtime_error("Not enough initial characters. Call `int updateCharacter(char)` instead.");
+        }
+
+        int previousHashDelta = static_cast<int>(previousCharacter);
+        for (int i = 0; i < (maxLength - 1); i += 1) {
+            previousHashDelta *= BASE;
+            previousHashDelta %= MOD;
+        }
+        currentHash -= previousHashDelta;
+
+        if (currentHash < 0) {
+            currentHash += MOD;
+        }
+
+        currentHash *= BASE;
+        currentHash += static_cast<int>(nextCharacter);
+        currentHash %= MOD;
+    }
+};
+
+
+#pragma mark - Find
 int findWithRollingHash(const std::string& haystack, const std::string& needle) {
-    auto needleHasher = HasherV1(needle.size());
+    auto needleHasher = HasherV2(needle.size());
     for (const auto& c: needle) {
         needleHasher.updateCharacter(c);
     }
     const auto needleHash = needleHasher.getHash();
 
     // First few characters.
-    auto haystackHasher = HasherV1(needle.size());
+    auto haystackHasher = HasherV2(needle.size());
     for (size_t left = 0; left < needle.size(); left += 1) {
         haystackHasher.updateCharacter(haystack[left]);
     }
@@ -120,6 +177,7 @@ int findWithRollingHash(const std::string& haystack, const std::string& needle) 
 }
 
 
+#pragma mark - Tests
 void test(const std::string& haystack, const std::string& needle, const int expectedResult) {
     auto result = findWithRollingHash(haystack, needle);
 
@@ -153,12 +211,12 @@ void testHashValue(const int needleLength, const int prefixLength) {
     auto needle = generateRandomString(needleLength);
     auto strWithPrefix = generateRandomString(prefixLength) + needle;
 
-    auto needleHasher = HasherV1(needleLength);
+    auto needleHasher = HasherV2(needleLength);
     for (const char& c: needle) {
         needleHasher.updateCharacter(c);
     }
 
-    auto strHasher = HasherV1(needleLength);
+    auto strHasher = HasherV2(needleLength);
     for (size_t i = 0; i < needleLength; i += 1) {
         strHasher.updateCharacter(strWithPrefix[i]);
     }
@@ -174,6 +232,7 @@ void testHashValue(const int needleLength, const int prefixLength) {
 }
 
 
+#pragma mark - Main
 int main() {
     // Overflow test cases.
     test("aaaaaacccccuuuuu", "aaaaaccccc", 1);
