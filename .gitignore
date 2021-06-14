@@ -1,5 +1,13 @@
+# Editor preferences
+/.vscode
+/.idea
+
 # macOS .DS_Store files.
 *.DS_Store
 
 # Compilation files.
 /out/
+
+# CMake files.
+/cmake-build-debug/
+/cmake-build-release/
