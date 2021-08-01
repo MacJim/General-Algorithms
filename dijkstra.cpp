@@ -6,6 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <set>
+#include <queue>
 #include <utility>    // std::pair
 
 #include "helpers/Operators.hpp"
@@ -13,19 +14,24 @@
 
 
 #pragma mark - Helpers
-
-
-#pragma mark - 1. Min Heap
-std::vector<int> dijkstraRedBlackTree(const int nodeCount, const std::vector<std::pair<int, int>>& edges, const std::vector<int>& distances, const int sourceNode) {
-    // Create graph.
-    auto neighbors = std::vector<std::unordered_map<int, int>>(nodeCount, std::unordered_map<int, int>());
+inline std::vector<std::unordered_map<int, int>> createGraph(const int nodeCount, const std::vector<std::pair<int, int>>& edges, const std::vector<int>& distances) {
+    auto returnValue = std::vector<std::unordered_map<int, int>>(nodeCount, std::unordered_map<int, int>());
     for (int i = 0; i < edges.size(); i += 1) {
         const auto& edge = edges[i];
         const auto& distance = distances[i];
 
-        neighbors[edge.first][edge.second] = distance;
-        neighbors[edge.second][edge.first] = distance;
+        returnValue[edge.first][edge.second] = distance;
+        returnValue[edge.second][edge.first] = distance;
     }
+
+    return returnValue;
+}
+
+
+#pragma mark - 1. Balanced search tree
+std::vector<int> dijkstraRedBlackTree(const int nodeCount, const std::vector<std::pair<int, int>>& edges, const std::vector<int>& distances, const int sourceNode) {
+    // Create graph.
+    const auto neighborsGraph = createGraph(nodeCount, edges, distances);
 
     auto returnValue = std::vector<int>(nodeCount, INT_MAX);
     returnValue[sourceNode] = 0;
@@ -47,11 +53,16 @@ std::vector<int> dijkstraRedBlackTree(const int nodeCount, const std::vector<std
 
     while (!unvisitedNodes.empty()) {
         int currentNode = *unvisitedNodes.begin();
-        // Mark current node as visited.
+        /*
+         * Mark current node as visited.
+         *
+         * Must do this before inserting an updated node (to avoid erasing an incorrect node).
+         * Actually, I can replace `unvisitedNodes.begin()` with `currentNode` to solve this issue.
+         */
         unvisitedNodes.erase(unvisitedNodes.begin());
 
         const int& currentDistance = returnValue[currentNode];
-        const auto& currentNeighbors = neighbors[currentNode];
+        const auto& currentNeighbors = neighborsGraph[currentNode];
 
         for (const auto& [neighbor, distance]: currentNeighbors) {
             if (unvisitedNodes.count(neighbor)) {
@@ -71,8 +82,71 @@ std::vector<int> dijkstraRedBlackTree(const int nodeCount, const std::vector<std
 }
 
 
+#pragma mark - 2. Heap
+std::vector<int> dijkstraHeap(const int nodeCount, const std::vector<std::pair<int, int>>& edges, const std::vector<int>& distances, const int sourceNode) {
+    // Create graph.
+    const auto neighborsGraph = createGraph(nodeCount, edges, distances);
+
+    auto returnValue = std::vector<int>(nodeCount, INT_MAX);
+    returnValue[sourceNode] = 0;
+
+    // The heap doesn't support searching. So I must log it.
+    auto visited = std::vector<bool>(nodeCount, false);
+
+    auto cmp = [] (const std::pair<int, int>& lhs, const std::pair<int, int>& rhs) -> bool {
+        // The heap doesn't need to deal with `returnValue[lhs] == returnValue[rhs]`.
+        return lhs.second > rhs.second;
+    };
+    /**
+     * (vertex, distance)
+     *
+     * When we update a vertex's distance, we insert the new distance without removing the existing entry in the heap.
+     * Thus, we'll need to either:
+     * - Compare `distance` with `returnValue[vertex]` to ignore previous "garbage"
+     */
+    auto unvisitedNodes = std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, decltype(cmp)>(cmp);
+    for (int i = 0; i < nodeCount; i += 1) {
+        if (i == sourceNode) {
+            unvisitedNodes.emplace(i, 0);
+        } else {
+            unvisitedNodes.emplace(i, INT_MAX);
+        }
+    }
+
+    while (!unvisitedNodes.empty()) {
+        const auto [currentNode, currentDistance] = unvisitedNodes.top();
+        unvisitedNodes.pop();
+
+        if (visited[currentNode]) {
+            // This is an outdated "garbage" node.
+            continue;
+        }
+        visited[currentNode] = true;
+//        if (currentDistance > returnValue[currentNode]) {
+//            // This is an outdated "garbage" node.
+//            continue;
+//        }
+
+        const auto& currentNeighbors = neighborsGraph[currentNode];
+
+        for (const auto& [neighbor, distance]: currentNeighbors) {
+            if (!visited[neighbor]) {
+                const int newTotalDistance = currentDistance + distance;
+                if (newTotalDistance < returnValue[neighbor]) {
+                    returnValue[neighbor] = newTotalDistance;
+                    unvisitedNodes.emplace(neighbor, newTotalDistance);
+                }
+            }
+        }
+    }
+
+    return returnValue;
+}
+
+
 void test(const int nodeCount, const std::vector<std::pair<int, int>>& edges, const std::vector<int>& distances, const int sourceNode, const std::vector<int>& expectedResult) {
-    auto result = dijkstraRedBlackTree(nodeCount, edges, distances, sourceNode);
+//    auto result = dijkstraRedBlackTree(nodeCount, edges, distances, sourceNode);
+    auto result = dijkstraHeap(nodeCount, edges, distances, sourceNode);
     if (result == expectedResult) {
         std::cout << terminal_format::OK_GREEN << "[Correct]" << terminal_format::ENDC << std::endl;
     } else {
