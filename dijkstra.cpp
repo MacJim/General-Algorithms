@@ -47,6 +47,9 @@ std::vector<int> dijkstraRedBlackTree(const int nodeCount, const std::vector<std
 
     while (!unvisitedNodes.empty()) {
         int currentNode = *unvisitedNodes.begin();
+        // Mark current node as visited.
+        unvisitedNodes.erase(unvisitedNodes.begin());
+
         const int& currentDistance = returnValue[currentNode];
         const auto& currentNeighbors = neighbors[currentNode];
 
@@ -62,9 +65,6 @@ std::vector<int> dijkstraRedBlackTree(const int nodeCount, const std::vector<std
                 }
             }
         }
-
-        // Mark current node as visited.
-        unvisitedNodes.erase(unvisitedNodes.begin());
     }
 
     return returnValue;
