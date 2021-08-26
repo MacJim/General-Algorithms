@@ -38,21 +38,24 @@ int searchForANumber(const std::vector<int>& nums, const int target) {
         return -1;
     }
 
+    // Closed interval: [left, right]
     int left = 0;
-    int right = nums.size() - 1;    // The initial value of right is within range.
+    int right = nums.size() - 1;    // The initial value of `right` is within range when using a closed interval.
 
-    while (left <= right) {    // Terminates when left == (right + 1)
+    while (left <= right) {    // Terminates when `left == (right + 1)` (because we're using a closed interval and `left == right` may be the solution).
         const auto mid = left + (right - left) / 2;
         if (nums[mid] == target) {
             return mid;
         } else if (nums[mid] > target) {
-            right = mid - 1;    // Minus 1 to prevent testing the same incorrect number.
+            // Minus 1 (when using a closed interval) to prevent testing the same incorrect number.
+            right = mid - 1;
         } else {
-            left = mid + 1;    // Plus 1 to prevent testing the same incorrect number.
+            // Plus 1 to prevent testing the same incorrect number.
+            left = mid + 1;
         }
     }
 
-    // There's no answer when left == (right + 1).
+    // Not found when left == (right + 1).
     return -1;
 }
 
@@ -101,19 +104,18 @@ int searchForLeftmostElement(const std::vector<int>& nums, const int target) {
         return -1;
     }
 
+    // [left, right)
     int left = 0;
-    int right = nums.size();    // The initial value of right is out of bound. This is because `left` can be out of bound at termination.
+    int right = nums.size();    // The initial value of `right` is out of bound when using an open interval. This is because `left` can be out of bound (equals `nums.size()`) on termination.
 
-    while (left < right) {    // Terminates when left == right
+    while (left < right) {    // Terminates when `left == right`: they may both be out of bound (equal `nums.size()`).
         int mid = left + (right - left) / 2;
 
         if (nums[mid] >= target) {
             // If it is larger or equals, `mid` will serve as an upper bound (in order to find the lower bound).
             right = mid;
         } else {
-            /*
-             * Note "plus 1" here: add it so that we can return the correct `left` that's equal to or bigger than `target`.
-             */
+            // Note "plus 1" here: add it so that we can return the correct `left` that's equal to or bigger than `target`.
             left = mid + 1;
         }
     }
@@ -195,6 +197,7 @@ int searchForRightmostElement(const std::vector<int>& nums, const int target) {
         return -1;
     }
 
+    // [left, right)
     int left = 0;
     int right = nums.size();    // The initial value of right is out of bound. This is because `left` can be out of bound at termination.
 
@@ -268,7 +271,7 @@ void testSearchForRightmostElement() {
 
 
 int main() {
-//    testSearchForANumber();
+    testSearchForANumber();
     testSearchForLeftmostElement();
     testSearchForRightmostElement();
 
