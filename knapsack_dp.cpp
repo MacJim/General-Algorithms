@@ -11,18 +11,17 @@ int knapsack(const int totalCapacity, std::vector<int>& weights, std::vector<int
 
     auto capacityValues = std::vector<int>(totalCapacity + 1, 0);
 
+    // Iterate over all items: Previous items are included in `capacityValues` (so we don't count a single item twice).
     for (size_t i = 0; i < weights.size(); i += 1) {
         const auto weight = weights[i];
         const auto value = values[i];
 
+        // Capacity big to small: Otherwise we may count an item twice (if it's valuable and lightweight).
         for (int capacity = (capacityValues.size() - 1); capacity >= 0; capacity -= 1) {
             if (weight > capacity) {
                 // Cannot fit current item into the knapsack.
                 break;
             }
-
-            // We're only using a single `capacityValues` array.
-            // Thus, Iterate from end to start in `capacityValues`.
 
             // Choose current item.
             const int remainingCapacity = capacity - weight;
@@ -56,6 +55,7 @@ int main() {
     test(5, {4,5,1}, {1,2,3}, 4);
     test(4, {4,5,1}, {1,2,3}, 3);
     test(3, {4,5,6}, {1,2,3}, 0);
+    test(8, {4,5,1,7}, {1,2,3,4}, 3+4);
 
     return 0;
 }
