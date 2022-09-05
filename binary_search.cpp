@@ -9,6 +9,11 @@
 #pragma mark - Helpers
 template <typename T>
 std::ostream& operator << (std::ostream& os, const std::vector<T>& v) {
+    if (v.empty()) {
+        os << "(empty vector)";
+        return os;
+    }
+
     os << "{";
 
     for (auto it = v.begin(); it < (v.end() - 1); it += 1) {
